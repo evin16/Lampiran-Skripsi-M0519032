@@ -56,9 +56,71 @@ tSNE10 = px.scatter(tSNE, x="x10", y="y10", color="topic_id", symbol="topic_id")
 tSNE25 = px.scatter(tSNE, x="x25", y="y25", color="topic_id", symbol="topic_id")
 tSNE100 = px.scatter(tSNE, x="x100", y="y100", color="topic_id", symbol="topic_id")
 
-# Count
-count = pd.read_csv('dataset/moba(chart).csv')
-count['topic'] = count['topic'].apply(str)
+# Sample data
+apps = ['AoV', 'Mobilelegends', 'Netdragons']
+categories = ['game', 'hero', 'kalah', 'hp', 'lag', 'tim', 'karakter', 'pakai']
+sentiment = ['negative', 'neutral', 'positive']
+
+data_app = {
+    'AoV': {
+        'negative': [52.7, 39.6, 33.3, 57.1, 53.8, 81.8, 23.1, 71.4],
+        'neutral': [6.5, 4.2, 33.3, 14.3, 15.4, 4.5, 0.0, 0.0],
+        'positive': [40.8, 56.3, 33.3, 28.6, 30.8, 13.6, 76.9, 28.6],
+    },
+    'Mobilelegends': {
+        'negative': [74.7, 76.5, 100.0, 66.7, 61.5, 85.0, 33.3, 100.0],
+        'neutral': [8.2, 3.9, 0.0, 33.3, 0.0, 2.5, 33.3, 0.0],
+        'positive': [17.1, 19.6, 0.0, 0.0, 38.5, 12.5, 33.3, 0.0],
+    },
+    'Netdragons': {
+        'negative': [43.8, 41.9, 33.3, 60.0, 50.0, 72.2, 25.0, 36.4],
+        'neutral': [15.0, 9.7, 0.0, 0.0, 11.1, 5.6, 0.0, 45.5],
+        'positive': [41.2, 48.4, 66.7, 40.0, 38.9, 22.2, 75.0, 18.2],
+    },
+}
+
+data_topic = {
+    'game': {
+        'AoV': [52.7, 6.5, 40.8],
+        'Mobilelegends': [74.7, 8.2, 17.1],
+        'Netdragons': [43.8, 15.0, 41.2],
+    },
+    'hero': {
+        'AoV': [39.6, 4.2, 56.3],
+        'Mobilelegends': [76.5, 3.9, 19.6],
+        'Netdragons': [41.9, 9.7, 48.4],
+    },
+    'kalah': {
+        'AoV': [33.3, 33.3, 33.3],
+        'Mobilelegends': [100.0, 0.0, 0.0],
+        'Netdragons': [33.3, 0.0, 66.7],
+    },
+    'hp': {
+        'AoV': [57.1, 14.3, 28.6],
+        'Mobilelegends': [66.7, 33.3, 0.0],
+        'Netdragons': [60.0, 0.0, 40.0],
+    },
+    'lag': {
+        'AoV': [53.8, 15.4, 30.8],
+        'Mobilelegends': [61.5, 0.0, 38.5],
+        'Netdragons': [50.0, 11.1, 38.9],
+    },
+    'tim': {
+        'AoV': [81.8, 4.5, 13.6],
+        'Mobilelegends': [85.0, 2.5, 12.5],
+        'Netdragons': [72.2, 5.6, 22.2],
+    },
+    'karakter': {
+        'AoV': [23.1, 0.0, 76.9],
+        'Mobilelegends': [33.3, 33.3, 33.3],
+        'Netdragons': [25.0, 0.0, 75.0],
+    },
+    'pakai': {
+        'AoV': [71.4, 0.0, 28.6],
+        'Mobilelegends': [100.0, 0.0, 0.0],
+        'Netdragons': [36.4, 45.5, 18.2],
+    },
+}
 
 navbar = dbc.NavbarSimple(
     brand="📱 Sentiment Analysis with Topic Modeling - LDA analysis output",
@@ -212,12 +274,11 @@ body_layout = dbc.Container(
                     [
                     html.H4("Sentiment apps by application name", className="card-title my-3"),
                     dcc.Dropdown(
-                        id="dropdown-app",
-                        options=["AoV", "Mobilelegends", "Netdragons"],
-                        value="0",
-                        clearable=False,
-                        ),
-                    dcc.Graph(id="graph-app"),
+                        id='categories-dropdown',
+                        options=[{'label': apps, 'value': apps} for apps in data_app.keys()],
+                        value='AoV'
+                    ),
+                    dcc.Graph(id='radar-app'),
                     ]
                     ),
                 ),
@@ -232,12 +293,11 @@ body_layout = dbc.Container(
                     [
                     html.H4("Sentiment apps by topic", className="card-title my-3"),
                     dcc.Dropdown(
-                        id="dropdown-topic",
-                        options=['game','hero','kalah','hp','lag','tim','karakter','pakai'],
-                        value="0",
-                        clearable=False,
-                        ),
-                    dcc.Graph(id="graph-topic"),
+                        id='category-dropdown',
+                        options=[{'label': categories, 'value': categories} for categories in data_topic.keys()],
+                        value='aplikasi'
+                    ),
+                    dcc.Graph(id='radar-chart')
                     ]
                     ),
                 ),
@@ -251,23 +311,50 @@ body_layout = dbc.Container(
     )
 
 @app.callback(
-    Output("graph-app", "figure"),
-    Input("dropdown-app", "value"))
+    Output('radar-app', 'figure'),
+    Input('categories-dropdown', 'value')
+)
 
-def update_bar_app(app):
-    mask = count["aplikasi"] == app
-    fig = px.bar(count[mask], x="sentiment", y="value",
-       color="topic", barmode="group")
+def update_radar_chart(selected_apps):
+    fig = go.Figure()
+    
+    for trace, values in data_app[selected_apps].items():
+        fig.add_trace(go.Scatterpolar(
+            r=values,
+            theta=categories,
+            fill='toself',
+            name=trace
+        ))
+        
+    fig.update_layout(
+        polar=dict(
+            radialaxis=dict(visible=True, range=[0, 100])
+        ),
+        showlegend=True
+    )
     return fig
 
 @app.callback(
-    Output("graph-topic", "figure"),
-    Input("dropdown-topic", "value"))
-
-def update_bar_topic(topic):
-    mask = count["topic"] == topic
-    fig = px.bar(count[mask], x="sentiment", y="value",
-        color="aplikasi", barmode="group")
+    Output('radar-chart', 'figure'),
+    Input('category-dropdown', 'value')
+)
+def update_radar_chart(selected_category):
+    fig = go.Figure()
+    
+    for trace, values in data_topic[selected_category].items():
+        fig.add_trace(go.Scatterpolar(
+            r=values,
+            theta=sentiment,
+            fill='toself',
+            name=trace
+        ))
+        
+    fig.update_layout(
+        polar=dict(
+            radialaxis=dict(visible=True, range=[0, 100])
+        ),
+        showlegend=True
+    )
     return fig
 
 app.layout = html.Div([navbar, body_layout])

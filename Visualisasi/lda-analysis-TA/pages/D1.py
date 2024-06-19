@@ -56,9 +56,54 @@ tSNE10 = px.scatter(tSNE, x="x10", y="y10", color="topic_id", symbol="topic_id")
 tSNE25 = px.scatter(tSNE, x="x25", y="y25", color="topic_id", symbol="topic_id")
 tSNE100 = px.scatter(tSNE, x="x100", y="y100", color="topic_id", symbol="topic_id")
 
-# Count
-count = pd.read_csv('dataset/dating(chart).csv')
-count['topic'] = count['topic'].apply(str)
+# Sample data
+apps = ['bumble', 'tinder']
+categories = ['aplikasi', 'orang', 'saldo', 'masuk', 'akun', 'rumah', 'verifikasi']
+sentiment = ['negative', 'neutral', 'positive']
+
+data_app = {
+    'bumble': {
+        'negative': [46.3, 60.2, 37.0, 43.5, 53.5, 54.5, 65.4],
+        'neutral': [20.3, 33.0, 40.7, 47.8, 44.2, 18.2, 30.8],
+        'positive': [33,4, 6.8, 22.2, 8.7, 2.3, 27.3, 3.8],
+    },
+    'tinder': {
+        'negative': [44.6, 58.6, 46.3, 73.6, 70.2, 46.4, 62.9],
+        'neutral': [14.4, 23.5, 21.1, 13.6, 20.6, 23.2, 29.2],
+        'positive': [41.0, 17.9, 32.7, 12.7, 9.2, 30.4, 7.9],
+    },
+}
+
+data_topic = {
+    'aplikasi': {
+        'Bumble': [46.3, 20.3, 33.4],
+        'Tinder': [44.6, 14.4, 41.0]
+    },
+    'orang': {
+        'Bumble': [60.2, 33.0, 6.8],
+        'Tinder': [58.6, 23.5, 17.9]
+    },
+    'saldo': {
+        'Bumble': [37.0, 40.7, 22.2],
+        'Tinder': [46.3, 21.1, 32.7]
+    },
+    'masuk': {
+        'Bumble': [43.5, 47.8, 8.7],
+        'Tinder': [73.6, 13.6, 12.7]
+    },
+    'akun': {
+        'Bumble': [53.5, 44.2, 2.3],
+        'Tinder': [70.2, 20.6, 9.2]
+    },
+    'rumah': {
+        'Bumble': [54.5, 18.2, 27.3],
+        'Tinder': [46.4, 23.2, 30.4]
+    },
+    'verifikasi': {
+        'Bumble': [65.4, 30.8, 3.8],
+        'Tinder': [62.9, 29.2, 7.9]
+    },
+}
 
 navbar = dbc.NavbarSimple(
     brand="📱 Sentiment Analysis with Topic Modeling - LDA analysis output",
@@ -212,12 +257,11 @@ body_layout = dbc.Container(
                     [
                     html.H4("Sentiment apps by application name", className="card-title my-3"),
                     dcc.Dropdown(
-                        id="dropdown-app",
-                        options=["bumble", "tinder"],
-                        value="0",
-                        clearable=False,
-                        ),
-                    dcc.Graph(id="graph-app"),
+                        id='categories-dropdown',
+                        options=[{'label': apps, 'value': apps} for apps in data_app.keys()],
+                        value='bumble'
+                    ),
+                    dcc.Graph(id='radar-app'),
                     ]
                     ),
                 ),
@@ -232,12 +276,11 @@ body_layout = dbc.Container(
                     [
                     html.H4("Sentiment apps by topic", className="card-title my-3"),
                     dcc.Dropdown(
-                        id="dropdown-topic",
-                        options=['aplikasi', 'orang', 'saldo', 'masuk', 'akun', 'rumah', 'verifikasi'],
-                        value="0",
-                        clearable=False,
-                        ),
-                    dcc.Graph(id="graph-topic"),
+                        id='category-dropdown',
+                        options=[{'label': categories, 'value': categories} for categories in data_topic.keys()],
+                        value='aplikasi'
+                    ),
+                    dcc.Graph(id='radar-chart')
                     ]
                     ),
                 ),
@@ -251,23 +294,51 @@ body_layout = dbc.Container(
     )
 
 @app.callback(
-    Output("graph-app", "figure"),
-    Input("dropdown-app", "value"))
+    Output('radar-app', 'figure'),
+    Input('categories-dropdown', 'value')
+)
 
-def update_bar_app(app):
-    mask = count["aplikasi"] == app
-    fig = px.bar(count[mask], x="sentiment", y="value",
-       color="topic", barmode="group")
+def update_radar_chart(selected_apps):
+    fig = go.Figure()
+    
+    for trace, values in data_app[selected_apps].items():
+        fig.add_trace(go.Scatterpolar(
+            r=values,
+            theta=categories,
+            fill='toself',
+            name=trace
+        ))
+        
+    fig.update_layout(
+        polar=dict(
+            radialaxis=dict(visible=True, range=[0, 100])
+        ),
+        showlegend=True
+    )
     return fig
 
-@app.callback(
-    Output("graph-topic", "figure"),
-    Input("dropdown-topic", "value"))
 
-def update_bar_topic(topic):
-    mask = count["topic"] == topic
-    fig = px.bar(count[mask], x="sentiment", y="value",
-        color="aplikasi", barmode="group")
+@app.callback(
+    Output('radar-chart', 'figure'),
+    Input('category-dropdown', 'value')
+)
+def update_radar_chart(selected_category):
+    fig = go.Figure()
+    
+    for trace, values in data_topic[selected_category].items():
+        fig.add_trace(go.Scatterpolar(
+            r=values,
+            theta=sentiment,
+            fill='toself',
+            name=trace
+        ))
+        
+    fig.update_layout(
+        polar=dict(
+            radialaxis=dict(visible=True, range=[0, 100])
+        ),
+        showlegend=True
+    )
     return fig
 
 app.layout = html.Div([navbar, body_layout])
