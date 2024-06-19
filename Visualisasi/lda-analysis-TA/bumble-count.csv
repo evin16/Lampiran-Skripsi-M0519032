@@ -1,0 +1,6 @@
+aplikasi,topic,negative,positive,neutral,sum,%(n),%(p),%(neu)
+bumble,topic_0,114,560,43,717,16.0,78.0,6.0
+bumble,topic_1,514,226,270,1010,51.0,22.0,27.0
+bumble,topic_2,366,128,142,636,58.0,20.0,22.0
+bumble,topic_3,135,97,21,253,53.0,38.0,8.0
+bumble,topic_4,72,140,20,232,31.0,60.0,9.0

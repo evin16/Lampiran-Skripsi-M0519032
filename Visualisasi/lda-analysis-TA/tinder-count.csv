@@ -1,0 +1,6 @@
+aplikasi,topic,negative,positive,neutral,sum,%(n),%(p),%(neu)
+tinder,topic_0,545,138,118,801,68.0,17.0,15.0
+tinder,topic_1,426,97,174,697,61.0,14.0,25.0
+tinder,topic_2,553,108,140,801,69.0,13.0,17.0
+tinder,topic_3,747,79,336,1162,64.0,7.0,29.0
+tinder,topic_4,1507,56,134,1697,89.0,3.0,8.0
